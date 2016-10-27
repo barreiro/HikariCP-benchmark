@@ -40,6 +40,14 @@ import com.mchange.v2.c3p0.ComboPooledDataSource;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
+import org.wildfly.datasource.api.WildFlyDataSource;
+import org.wildfly.datasource.api.WildFlyDataSourceFactory;
+import org.wildfly.datasource.api.configuration.ConnectionFactoryConfigurationBuilder;
+import org.wildfly.datasource.api.configuration.ConnectionPoolConfiguration;
+import org.wildfly.datasource.api.configuration.ConnectionPoolConfigurationBuilder;
+import org.wildfly.datasource.api.configuration.DataSourceConfiguration;
+import org.wildfly.datasource.api.configuration.DataSourceConfigurationBuilder;
+
 import one.datasource.DataSourceImpl;
 
 @State(Scope.Benchmark)
@@ -47,7 +55,7 @@ public class BenchBase
 {
     protected static final int MIN_POOL_SIZE = 0;
 
-    @Param({ "hikari", "dbcp", "dbcp2", "tomcat", "c3p0", "vibur", "one" })
+    @Param({ "hikari", "dbcp", "dbcp2", "tomcat", "c3p0", "vibur", "one", "wildfly", "wildfly-hikari" })
     public String pool;
 
     @Param({ "32" })
@@ -99,6 +107,12 @@ public class BenchBase
         case "one":
             setupOne();
             break;
+        case "wildfly":
+            setupWildFly();
+            break;
+        case "wildfly-hikari":
+            setupWildFlyHikari();
+            break;
         }
     }
 
@@ -124,6 +138,12 @@ public class BenchBase
             break;
         case "vibur":
             ((ViburDBCPDataSource) DS).terminate();
+            break;
+        case "wildfly":
+            ((WildFlyDataSource) DS).close();
+            break;
+        case "wildfly-hikari":
+            ((WildFlyDataSource) DS).close();
             break;
         }
     }
@@ -269,4 +289,61 @@ public class BenchBase
         
         DS = new DataSourceImpl("one", props);
     }
+
+    private void setupWildFly()
+    {
+        DataSourceConfiguration dataSourceConfiguration = new DataSourceConfigurationBuilder()
+                .setDataSourceImplementation( DataSourceConfiguration.DataSourceImplementation.WILDFLY )
+                .setMetricsEnabled( false )
+                .setConnectionPoolConfiguration( new ConnectionPoolConfigurationBuilder()
+                        .setMinSize( MIN_POOL_SIZE )
+                        .setMaxSize( maxPoolSize )
+                        .setPreFillMode( ConnectionPoolConfiguration.PreFillMode.MAX )
+                        .setConnectionFactoryConfiguration( new ConnectionFactoryConfigurationBuilder()
+                                .setDriverClassName( "com.zaxxer.hikari.benchmark.stubs.StubDriver" )
+                                .setJdbcUrl( jdbcUrl )
+                                .setUsername( "brettw" )
+                                .setPassword( "" )
+                                .setAutoCommit( false )
+                                .build()
+                        )
+                        .build()
+                )
+                .build();
+        try {
+            DS = WildFlyDataSourceFactory.create( dataSourceConfiguration );
+        } catch ( SQLException e ) {
+            e.printStackTrace();
+        }
+    }
+
+
+    private void setupWildFlyHikari()
+    {
+        DataSourceConfiguration dataSourceConfiguration = new DataSourceConfigurationBuilder()
+                .setDataSourceImplementation( DataSourceConfiguration.DataSourceImplementation.HIKARI )
+                .setMetricsEnabled( false )
+                .setConnectionPoolConfiguration( new ConnectionPoolConfigurationBuilder()
+                        .setMinSize( MIN_POOL_SIZE )
+                        .setMaxSize( maxPoolSize )
+                        .setPreFillMode( ConnectionPoolConfiguration.PreFillMode.MAX )
+                        .setConnectionValidationTimeout( 8000 )
+                        .setConnectionFactoryConfiguration( new ConnectionFactoryConfigurationBuilder()
+                                .setDriverClassName( "com.zaxxer.hikari.benchmark.stubs.StubDriver" )
+                                .setJdbcUrl( jdbcUrl )
+                                .setUsername( "brettw" )
+                                .setPassword( "" )
+                                .setAutoCommit( false )
+                                .build()
+                        )
+                        .build()
+                )
+                .build();
+        try {
+            DS = WildFlyDataSourceFactory.create( dataSourceConfiguration );
+        } catch ( SQLException e ) {
+            e.printStackTrace();
+        }
+    }
+
 }

@@ -12,10 +12,18 @@ if [[ "gcprof" == "$1" ]]; then
    shift
 fi
 
+if [[ "jfr" == "$1" ]]; then
+   JAVA_OPTIONS="$JAVA_OPTIONS -XX:+UnlockCommercialFeatures -XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints -XX:+FlightRecorder"
+   JAVA_OPTIONS="$JAVA_OPTIONS -XX:StartFlightRecording=compress=false,delay=20s,duration=24h,filename=/tmp/flight_record_"$DATE".jfr,settings=lowOverhead" #contention" #notSoLowOverhead" #lowOverhead
+   shift
+fi
+
 JMH_THREADS="-t 8"
-if [[ "$2" == "-t" ]]; then
-   JMH_THREADS="-t $3"
-   set -- "$1" "${@:4}"
+if [[ "$1" == "-t" ]]; then
+   shift
+   JMH_THREADS="-t $1"
+   shift
+   #set -- "$1" "${@:4}"
 fi
 
 if [[ "quick" == "$1" ]]; then
@@ -27,8 +35,8 @@ elif [[ "long" == "$1" ]]; then
 elif [[ "profile" == "$1" ]]; then
    java -server $JAVA_OPTIONS -agentpath:/Applications/jprofiler8/bin/macos/libjprofilerti.jnilib=port=8849 -jar ./target/microbenchmarks.jar -r 5 -wi 3 -i 8 $JMH_THREADS -f 0 $2 $3 $4 $5 $6 $7 $8 $9
 elif [[ "debug" == "$1" ]]; then
-   java -server $JAVA_OPTIONS -Xdebug -Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=y -jar ./target/microbenchmarks.jar -r 5 -wi 3 -i 8 -t 8 -f 0 $2 $3 $4 $5 $6 $7 $8 $9
+   java -server $JAVA_OPTIONS -Xdebug -Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=y -jar ./target/microbenchmarks.jar -r 5 -wi 3 -i 8 $JMH_THREADS -f 0 $2 $3 $4 $5 $6 $7 $8 $9
 else
-   java -jar ./target/microbenchmarks.jar -jvmArgs "$JAVA_OPTIONS" -wi 3 -i 15 -t 8 $1 $2 $3 $4 $5 $6 $7 $8 $9
+   java -jar ./target/microbenchmarks.jar -jvmArgs "$JAVA_OPTIONS" -wi 3 -i 15 $JMH_THREADS $1 $2 $3 $4 $5 $6 $7 $8 $9
 fi
 
