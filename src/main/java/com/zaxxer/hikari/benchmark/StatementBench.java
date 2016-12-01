@@ -53,15 +53,16 @@ public class StatementBench extends BenchBase
     public Statement cycleStatement(ConnectionState state) throws SQLException
     {
         Statement statement = state.connection.createStatement();
-        state.consume(statement.execute("INSERT INTO test (column) VALUES (?)"));
+        state.blackhole.consume(statement.execute("INSERT INTO test (column) VALUES (?)"));
         statement.close();
         return statement;
     }
 
     @State(Scope.Thread)
-    public static class ConnectionState extends Blackhole
+    public static class ConnectionState
     {
         Connection connection;
+        Blackhole blackhole = new Blackhole( "Today\'s password is swordfish. I understand instantiating Blackholes directly is dangerous." );
 
         @Setup(Level.Iteration)
         public void setup() throws SQLException
