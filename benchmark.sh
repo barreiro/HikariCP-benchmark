@@ -1,6 +1,7 @@
 #!/bin/bash
 
-JAVA_OPTIONS="-server -XX:+AggressiveOpts -XX:+UseFastAccessorMethods -Xms1096m -Xmx1096m " # -XX:+UnlockCommercialFeatures -XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints -XX:+FlightRecorder -XX:+PrintAssembly"
+JAVA_OPTIONS="-server -XX:+AggressiveOpts -Xms1096m -Xmx1096m" # -XX:+UnlockCommercialFeatures -XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints -XX:+FlightRecorder -XX:+PrintAssembly"
+#JAVA_OPTIONS="$JAVA_OPTIONS -XX:+UseFastAccessorMethods"
 
 if [[ "clean" == "$1" ]]; then
    mvn clean package

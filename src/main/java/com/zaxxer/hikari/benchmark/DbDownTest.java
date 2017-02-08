@@ -20,6 +20,14 @@ import com.jolbox.bonecp.BoneCPDataSource;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import org.wildfly.datasource.api.WildFlyDataSource;
+import org.wildfly.datasource.api.configuration.ConnectionFactoryConfigurationBuilder;
+import org.wildfly.datasource.api.configuration.ConnectionPoolConfiguration;
+import org.wildfly.datasource.api.configuration.ConnectionPoolConfigurationBuilder;
+import org.wildfly.datasource.api.configuration.DataSourceConfiguration;
+import org.wildfly.datasource.api.configuration.DataSourceConfigurationBuilder;
+import org.wildfly.datasource.api.security.NamePrincipal;
+import org.wildfly.datasource.api.security.SimplePassword;
 
 public class DbDownTest
 {
@@ -35,6 +43,7 @@ public class DbDownTest
     private final DataSource c3p0DS;
     private final DataSource tomcatDS;
     private final DataSource viburDS;
+    private final DataSource wildFlyIntegratedDS;
 
     public static void main(String[] args)
     {
@@ -49,6 +58,7 @@ public class DbDownTest
         viburDS = setupVibur();
         boneDS = setupBone();
         tomcatDS = setupDbcp();
+        wildFlyIntegratedDS = setupWildFlyIntegrated();
     }
 
     private void start()
@@ -95,6 +105,7 @@ public class DbDownTest
         new Timer(true).schedule(new MyTask(viburDS), 5000, 2000);
         new Timer(true).schedule(new MyTask(boneDS), 5000, 2000);
         new Timer(true).schedule(new MyTask(tomcatDS), 5000, 2000);
+        new Timer(true).schedule(new MyTask(wildFlyIntegratedDS), 5000, 2000);
 
         try
         {
@@ -205,5 +216,32 @@ public class DbDownTest
         vibur.start();
 
         return vibur;
+    }
+
+    private DataSource setupWildFlyIntegrated()
+    {
+        try {
+        DataSourceConfigurationBuilder dataSourceConfigurationBuilder = new DataSourceConfigurationBuilder()
+                .dataSourceImplementation( DataSourceConfiguration.DataSourceImplementation.INTEGRATED )
+                .metricsEnabled( Boolean.parseBoolean( System.getProperty( "metrics", "false" ) ) )
+                .connectionPoolConfiguration( new ConnectionPoolConfigurationBuilder()
+                        .minSize( MIN_POOL_SIZE )
+                        .maxSize( maxPoolSize )
+                        .preFillMode( ConnectionPoolConfiguration.PreFillMode.MAX )
+                        .connectionFactoryConfiguration( new ConnectionFactoryConfigurationBuilder()
+                                .driverClassName( "com.zaxxer.hikari.benchmark.stubs.StubDriver" )
+                                .jdbcUrl( JDBC_URL )
+                                .principal( new NamePrincipal( "root" ) )
+                                .credential( new SimplePassword( "" ) )
+                                .autoCommit( false )
+                        )
+                );
+
+            return WildFlyDataSource.from( dataSourceConfigurationBuilder );
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException( e );
+        }
     }
 }

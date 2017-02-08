@@ -19,6 +19,7 @@ package com.zaxxer.hikari.benchmark;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.util.Properties;
 
 import javax.sql.DataSource;
@@ -41,6 +42,7 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
 import org.wildfly.datasource.api.WildFlyDataSource;
+import org.wildfly.datasource.api.WildFlyDataSourceListener;
 import org.wildfly.datasource.api.configuration.ConnectionFactoryConfigurationBuilder;
 import org.wildfly.datasource.api.configuration.ConnectionPoolConfiguration;
 import org.wildfly.datasource.api.configuration.ConnectionPoolConfigurationBuilder;
@@ -48,6 +50,8 @@ import org.wildfly.datasource.api.configuration.DataSourceConfiguration;
 import org.wildfly.datasource.api.configuration.DataSourceConfigurationBuilder;
 
 import one.datasource.DataSourceImpl;
+import org.wildfly.datasource.api.security.NamePrincipal;
+import org.wildfly.datasource.api.security.SimplePassword;
 
 @State(Scope.Benchmark)
 public class BenchBase
@@ -295,22 +299,19 @@ public class BenchBase
     private void setupWildFly()
     {
         DataSourceConfigurationBuilder dataSourceConfigurationBuilder = new DataSourceConfigurationBuilder()
-                .setDataSourceImplementation( DataSourceConfiguration.DataSourceImplementation.WILDFLY )
-                .setMetricsEnabled( false )
-                .setConnectionPoolConfiguration( new ConnectionPoolConfigurationBuilder()
-                        .setPoolImplementation( ConnectionPoolConfiguration.PoolImplementation.BLOCKING_QUEUE )
-                        .setMinSize( MIN_POOL_SIZE )
-                        .setMaxSize( maxPoolSize )
-                        .setAcquisitionTimeout( 0 )
-                        .setConnectionReapTimeout( 0 )
-                        .setConnectionValidationTimeout( 0 )
-                        .setPreFillMode( ConnectionPoolConfiguration.PreFillMode.MAX )
-                        .setConnectionFactoryConfiguration( new ConnectionFactoryConfigurationBuilder()
-                                .setDriverClassName( "com.zaxxer.hikari.benchmark.stubs.StubDriver" )
-                                .setJdbcUrl( jdbcUrl )
-                                .setUsername( "brettw" )
-                                .setPassword( "" )
-                                .setAutoCommit( false )
+                .dataSourceImplementation( DataSourceConfiguration.DataSourceImplementation.WILDFLY )
+                .metricsEnabled( false )
+                .connectionPoolConfiguration( new ConnectionPoolConfigurationBuilder()
+                        .poolImplementation( ConnectionPoolConfiguration.PoolImplementation.BLOCKING_QUEUE )
+                        .minSize( MIN_POOL_SIZE )
+                        .maxSize( maxPoolSize )
+                        .preFillMode( ConnectionPoolConfiguration.PreFillMode.MAX )
+                        .connectionFactoryConfiguration( new ConnectionFactoryConfigurationBuilder()
+                                .driverClassName( "com.zaxxer.hikari.benchmark.stubs.StubDriver" )
+                                .jdbcUrl( jdbcUrl )
+                                .principal( new NamePrincipal( "brettw" ) )
+                                .credential( new SimplePassword( "" ) )
+                                .autoCommit( false )
                         )
                 );
         try {
@@ -323,21 +324,18 @@ public class BenchBase
     private void setupWildFlyIntegrated()
     {
         DataSourceConfigurationBuilder dataSourceConfigurationBuilder = new DataSourceConfigurationBuilder()
-                .setDataSourceImplementation( DataSourceConfiguration.DataSourceImplementation.INTEGRATED )
-                .setMetricsEnabled( Boolean.parseBoolean( System.getProperty( "metrics", "false" ) ) )
-                .setConnectionPoolConfiguration( new ConnectionPoolConfigurationBuilder()
-                        .setMinSize( MIN_POOL_SIZE )
-                        .setMaxSize( maxPoolSize )
-                        .setAcquisitionTimeout( 0 )
-                        .setConnectionReapTimeout( 0 )
-                        .setConnectionValidationTimeout( 0 )
-                        .setPreFillMode( ConnectionPoolConfiguration.PreFillMode.MAX )
-                        .setConnectionFactoryConfiguration( new ConnectionFactoryConfigurationBuilder()
-                                .setDriverClassName( "com.zaxxer.hikari.benchmark.stubs.StubDriver" )
-                                .setJdbcUrl( jdbcUrl )
-                                .setUsername( "brettw" )
-                                .setPassword( "" )
-                                .setAutoCommit( false )
+                .dataSourceImplementation( DataSourceConfiguration.DataSourceImplementation.INTEGRATED )
+                .metricsEnabled( Boolean.parseBoolean( System.getProperty( "metrics", "false" ) ) )
+                .connectionPoolConfiguration( new ConnectionPoolConfigurationBuilder()
+                        .minSize( MIN_POOL_SIZE )
+                        .maxSize( maxPoolSize )
+                        .preFillMode( ConnectionPoolConfiguration.PreFillMode.MAX )
+                        .connectionFactoryConfiguration( new ConnectionFactoryConfigurationBuilder()
+                                .driverClassName( "com.zaxxer.hikari.benchmark.stubs.StubDriver" )
+                                .jdbcUrl( jdbcUrl )
+                                .principal( new NamePrincipal( "brettw" ) )
+                                .credential( new SimplePassword( "" ) )
+                                .autoCommit( false )
                         )
                 );
         try {
@@ -350,21 +348,19 @@ public class BenchBase
     private void setupWildFlyHikari()
     {
         DataSourceConfigurationBuilder dataSourceConfigurationBuilder = new DataSourceConfigurationBuilder()
-                .setDataSourceImplementation( DataSourceConfiguration.DataSourceImplementation.HIKARI )
-                .setMetricsEnabled( false )
-                .setConnectionPoolConfiguration( new ConnectionPoolConfigurationBuilder()
-                        .setMinSize( MIN_POOL_SIZE )
-                        .setMaxSize( maxPoolSize )
-                        .setPreFillMode( ConnectionPoolConfiguration.PreFillMode.MAX )
-                        .setAcquisitionTimeout( 0 )
-                        .setConnectionReapTimeout( 0 )
-                        .setConnectionValidationTimeout( 8000 )
-                        .setConnectionFactoryConfiguration( new ConnectionFactoryConfigurationBuilder()
-                                .setDriverClassName( "com.zaxxer.hikari.benchmark.stubs.StubDriver" )
-                                .setJdbcUrl( jdbcUrl )
-                                .setUsername( "brettw" )
-                                .setPassword( "" )
-                                .setAutoCommit( false )
+                .dataSourceImplementation( DataSourceConfiguration.DataSourceImplementation.HIKARI )
+                .metricsEnabled( false )
+                .connectionPoolConfiguration( new ConnectionPoolConfigurationBuilder()
+                        .minSize( MIN_POOL_SIZE )
+                        .maxSize( maxPoolSize )
+                        .preFillMode( ConnectionPoolConfiguration.PreFillMode.MAX )
+                        .validationTimeout( Duration.ofMinutes( 1 ) )
+                        .connectionFactoryConfiguration( new ConnectionFactoryConfigurationBuilder()
+                                .driverClassName( "com.zaxxer.hikari.benchmark.stubs.StubDriver" )
+                                .jdbcUrl( jdbcUrl )
+                                .principal( new NamePrincipal( "brettw" ) )
+                                .credential( new SimplePassword( "" ) )
+                                .autoCommit( false )
                         )
                 );
         try {
